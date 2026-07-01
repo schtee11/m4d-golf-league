@@ -10,6 +10,7 @@ export default function SubmitRound() {
 
   const [playerId, setPlayerId] = useState("");
   const [courseName, setCourseName] = useState("");
+  const [roundType, setRoundType] = useState("");
   const [courseId, setCourseId] = useState("");
   const [weekId, setWeekId] = useState("");
   const [datePlayed, setDatePlayed] = useState(
@@ -39,13 +40,33 @@ export default function SubmitRound() {
 
   const courseNames = [...new Set(courses.map((c) => c.name))].sort();
   const teesForCourse = courses.filter((c) => c.name === courseName);
+  const roundTypesForCourse = [...new Set(teesForCourse.map((c) => c.round_type))].sort(
+    (a, b) => Number(b) - Number(a)
+  );
+  const teesForRoundType = teesForCourse.filter((c) => c.round_type === roundType);
   const selectedCourse = courses.find((c) => c.id === Number(courseId));
+
+  // Skip the extra tap when there's only one option to pick from.
+  const defaultSelectionFor = (list, name) => {
+    const tees = list.filter((c) => c.name === name);
+    const roundTypes = [...new Set(tees.map((c) => c.round_type))];
+    const rt = roundTypes.length === 1 ? roundTypes[0] : "";
+    const matching = tees.filter((c) => c.round_type === rt);
+    const id = rt && matching.length === 1 ? String(matching[0].id) : "";
+    return { roundType: rt, courseId: id };
+  };
 
   const handleCourseNameChange = (name) => {
     setCourseName(name);
-    const tees = courses.filter((c) => c.name === name);
-    // Skip the extra tap when there's only one tee to pick from.
-    setCourseId(tees.length === 1 ? String(tees[0].id) : "");
+    const { roundType: rt, courseId: id } = defaultSelectionFor(courses, name);
+    setRoundType(rt);
+    setCourseId(id);
+  };
+
+  const handleRoundTypeChange = (rt) => {
+    setRoundType(rt);
+    const matching = teesForCourse.filter((c) => c.round_type === rt);
+    setCourseId(matching.length === 1 ? String(matching[0].id) : "");
   };
 
   // Scores start at par — a stepper you tap up/down from there is faster
@@ -73,12 +94,15 @@ export default function SubmitRound() {
         added.push(existing || (await api.courses.create(data)));
       }
 
-      setCourses((prev) => {
-        const existingIds = new Set(prev.map((c) => c.id));
-        return [...prev, ...added.filter((c) => !existingIds.has(c.id))];
-      });
-      setCourseName(dataArray[0].name);
-      setCourseId(added.length === 1 ? String(added[0].id) : "");
+      const existingIds = new Set(courses.map((c) => c.id));
+      const merged = [...courses, ...added.filter((c) => !existingIds.has(c.id))];
+      setCourses(merged);
+
+      const name = dataArray[0].name;
+      setCourseName(name);
+      const { roundType: rt, courseId: id } = defaultSelectionFor(merged, name);
+      setRoundType(rt);
+      setCourseId(id);
       setShowCourseSearch(false);
     } catch (err) {
       setStatus({ type: "error", message: `Couldn't add course: ${err.message}` });
@@ -264,6 +288,25 @@ export default function SubmitRound() {
 
           {courseName && (
             <div className="mt-2">
+              <label className="block text-sm font-medium mb-1">Holes</label>
+              <select
+                required
+                className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-fairway-400"
+                value={roundType}
+                onChange={(e) => handleRoundTypeChange(e.target.value)}
+              >
+                <option value="">Select holes</option>
+                {roundTypesForCourse.map((rt) => (
+                  <option key={rt} value={rt}>
+                    {rt} holes
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {courseName && roundType && (
+            <div className="mt-2">
               <label className="block text-sm font-medium mb-1">Tee</label>
               <select
                 required
@@ -272,9 +315,9 @@ export default function SubmitRound() {
                 onChange={(e) => setCourseId(e.target.value)}
               >
                 <option value="">Select tee</option>
-                {teesForCourse.map((c) => (
+                {teesForRoundType.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.tee_name} ({c.round_type} holes, slope {c.slope_rating})
+                    {c.tee_name} (slope {c.slope_rating})
                   </option>
                 ))}
               </select>
