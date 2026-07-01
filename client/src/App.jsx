@@ -5,15 +5,19 @@ import SubmitRound from "./pages/SubmitRound.jsx";
 import Commish from "./pages/Commish.jsx";
 
 const navLinkClass = ({ isActive }) =>
-  `px-3 py-2 min-h-[44px] flex items-center rounded ${
-    isActive ? "bg-fairway-600 text-white" : "text-fairway-700 hover:bg-fairway-100"
+  `px-3.5 py-2 min-h-[44px] flex items-center rounded-full text-sm font-medium transition-colors duration-150 ${
+    isActive
+      ? "bg-fairway-600 text-white shadow-sm"
+      : "text-fairway-700 hover:bg-fairway-100"
   }`;
 
 export default function App() {
   return (
     <div className="min-h-screen">
-      <nav className="bg-white shadow px-4 py-3 flex items-center gap-2 flex-wrap">
-        <span className="font-bold text-fairway-700 mr-4">⛳ M4D Golf League</span>
+      <nav className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-fairway-100 shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
+        <span className="font-extrabold tracking-tight text-fairway-700 mr-2 flex items-center gap-1.5">
+          <span className="text-xl">⛳</span> M4D Golf League
+        </span>
         <NavLink to="/" end className={navLinkClass}>
           Season
         </NavLink>

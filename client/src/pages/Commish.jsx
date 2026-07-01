@@ -97,11 +97,11 @@ export default function Commish() {
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold">Commish Panel</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight">Commish Panel</h1>
 
       {/* Players */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-3">Players</h2>
+      <section className="bg-white rounded-xl shadow-card border border-fairway-100 p-6">
+        <h2 className="text-lg font-bold mb-3 text-fairway-800">Players</h2>
         <form onSubmit={addPlayer} className="flex flex-wrap gap-2 mb-4">
           <input
             className="flex-1 min-w-[140px] min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
@@ -119,15 +119,15 @@ export default function Commish() {
             onChange={(e) => setNewPlayerHandicap(e.target.value)}
             required
           />
-          <button className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 text-white px-5 rounded-lg font-medium">
+          <button className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.98] text-white px-5 rounded-lg font-medium transition-all">
             Add
           </button>
         </form>
 
         <ul className="divide-y divide-fairway-100">
           {players.map((p) => (
-            <li key={p.id} className="py-2 flex items-center justify-between">
-              <span>{p.name}</span>
+            <li key={p.id} className="py-2.5 flex items-center justify-between">
+              <span className="font-medium">{p.name}</span>
               <input
                 type="number"
                 step="0.1"
@@ -141,8 +141,8 @@ export default function Commish() {
       </section>
 
       {/* Weeks */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-3">Weeks</h2>
+      <section className="bg-white rounded-xl shadow-card border border-fairway-100 p-6">
+        <h2 className="text-lg font-bold mb-3 text-fairway-800">Weeks</h2>
         <form onSubmit={addWeek} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
           <input
             type="number"
@@ -166,25 +166,33 @@ export default function Commish() {
             onChange={(e) => setNewWeekEnd(e.target.value)}
             required
           />
-          <button className="sm:col-span-3 min-h-[48px] bg-fairway-500 hover:bg-fairway-600 text-white py-3 rounded-lg font-medium">
+          <button className="sm:col-span-3 min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.99] text-white py-3 rounded-lg font-medium transition-all">
             Add Week
           </button>
         </form>
         <ul className="divide-y divide-fairway-100">
           {weeks.map((w) => (
-            <li key={w.id} className="py-2 flex items-center justify-between">
-              <span>
+            <li key={w.id} className="py-2.5 flex items-center justify-between">
+              <span className="font-medium">
                 Week {w.week_number} ({w.start_date} – {w.end_date})
               </span>
-              <span className="text-sm text-fairway-500">{w.status}</span>
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  w.status === "open"
+                    ? "bg-fairway-100 text-fairway-700"
+                    : "bg-fairway-900/10 text-fairway-500"
+                }`}
+              >
+                {w.status}
+              </span>
             </li>
           ))}
         </ul>
       </section>
 
       {/* Courses */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-3">Courses</h2>
+      <section className="bg-white rounded-xl shadow-card border border-fairway-100 p-6">
+        <h2 className="text-lg font-bold mb-3 text-fairway-800">Courses</h2>
 
         <div className="mb-6">
           <CourseSearchPicker onApply={applyCourseSearchResult} />
@@ -253,7 +261,7 @@ export default function Commish() {
             onChange={(e) => setCourseForm({ ...courseForm, hole_pars: e.target.value })}
             required
           />
-          <button className="w-full min-h-[48px] bg-fairway-500 hover:bg-fairway-600 text-white py-3 rounded-lg font-medium">
+          <button className="w-full min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.99] text-white py-3 rounded-lg font-medium transition-all">
             Add Course
           </button>
         </form>

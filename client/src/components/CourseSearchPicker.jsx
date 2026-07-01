@@ -68,7 +68,7 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
   };
 
   return (
-    <div className="p-4 bg-fairway-50 rounded-lg border border-fairway-100">
+    <div className="p-4 bg-fairway-50 rounded-xl border border-fairway-100">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold">Search course database</h3>
         {onCancel && (
@@ -100,7 +100,7 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
             />
             <button
               type="button"
-              className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 text-white px-5 rounded-lg font-medium"
+              className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.98] text-white px-5 rounded-lg font-medium transition-all"
               onClick={search}
             >
               Search

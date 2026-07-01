@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  @apply bg-fairway-50 text-fairway-900;
+  @apply bg-fairway-50 text-fairway-900 antialiased;
+  background-image: radial-gradient(circle at top, rgb(74 158 74 / 0.06), transparent 55%);
+  background-attachment: fixed;
+}
+
+::selection {
+  @apply bg-fairway-400/30;
 }
