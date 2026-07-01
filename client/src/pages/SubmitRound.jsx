@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
+import CourseSearchPicker from "../components/CourseSearchPicker.jsx";
 
 export default function SubmitRound() {
   const [players, setPlayers] = useState([]);
@@ -14,6 +15,9 @@ export default function SubmitRound() {
   );
   const [holeScores, setHoleScores] = useState([]);
   const [status, setStatus] = useState(null);
+
+  const [showCourseSearch, setShowCourseSearch] = useState(false);
+  const [addingCourse, setAddingCourse] = useState(false);
 
   useEffect(() => {
     Promise.all([api.players.list(), api.courses.list(), api.weeks.list()]).then(
@@ -32,6 +36,35 @@ export default function SubmitRound() {
       setHoleScores(new Array(selectedCourse.hole_pars.length).fill(""));
     }
   }, [courseId]);
+
+  // If a matching course/tee is already in the league, reuse it instead of
+  // creating a duplicate row every time someone searches the same tee.
+  const applyCourseSearchResult = async (data) => {
+    const existing = courses.find(
+      (c) =>
+        c.name === data.name &&
+        c.tee_name === data.tee_name &&
+        c.round_type === data.round_type
+    );
+
+    if (existing) {
+      setCourseId(String(existing.id));
+      setShowCourseSearch(false);
+      return;
+    }
+
+    setAddingCourse(true);
+    try {
+      const created = await api.courses.create(data);
+      setCourses((prev) => [...prev, created]);
+      setCourseId(String(created.id));
+      setShowCourseSearch(false);
+    } catch (err) {
+      setStatus({ type: "error", message: `Couldn't add course: ${err.message}` });
+    } finally {
+      setAddingCourse(false);
+    }
+  };
 
   const handleScoreChange = (index, rawValue) => {
     const value = rawValue.replace(/\D/g, "");
@@ -121,6 +154,26 @@ export default function SubmitRound() {
               </option>
             ))}
           </select>
+
+          {!showCourseSearch ? (
+            <button
+              type="button"
+              className="mt-2 text-sm text-fairway-600 hover:text-fairway-800 font-medium"
+              onClick={() => setShowCourseSearch(true)}
+            >
+              Can't find your course? Search and add it
+            </button>
+          ) : (
+            <div className="mt-3">
+              <CourseSearchPicker
+                onApply={applyCourseSearchResult}
+                onCancel={() => setShowCourseSearch(false)}
+              />
+              {addingCourse && (
+                <p className="text-sm text-fairway-500 mt-2">Adding course...</p>
+              )}
+            </div>
+          )}
         </div>
 
         <div>
