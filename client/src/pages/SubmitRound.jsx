@@ -9,6 +9,7 @@ export default function SubmitRound() {
   const [weeks, setWeeks] = useState([]);
 
   const [playerId, setPlayerId] = useState("");
+  const [courseName, setCourseName] = useState("");
   const [courseId, setCourseId] = useState("");
   const [weekId, setWeekId] = useState("");
   const [datePlayed, setDatePlayed] = useState(
@@ -36,7 +37,16 @@ export default function SubmitRound() {
     );
   }, []);
 
+  const courseNames = [...new Set(courses.map((c) => c.name))].sort();
+  const teesForCourse = courses.filter((c) => c.name === courseName);
   const selectedCourse = courses.find((c) => c.id === Number(courseId));
+
+  const handleCourseNameChange = (name) => {
+    setCourseName(name);
+    const tees = courses.filter((c) => c.name === name);
+    // Skip the extra tap when there's only one tee to pick from.
+    setCourseId(tees.length === 1 ? String(tees[0].id) : "");
+  };
 
   // Scores start at par — a stepper you tap up/down from there is faster
   // and less error-prone on a phone than typing every hole from scratch.
@@ -46,27 +56,29 @@ export default function SubmitRound() {
     }
   }, [courseId]);
 
-  // If a matching course/tee is already in the league, reuse it instead of
-  // creating a duplicate row every time someone searches the same tee.
-  const applyCourseSearchResult = async (data) => {
-    const existing = courses.find(
-      (c) =>
-        c.name === data.name &&
-        c.tee_name === data.tee_name &&
-        c.round_type === data.round_type
-    );
-
-    if (existing) {
-      setCourseId(String(existing.id));
-      setShowCourseSearch(false);
-      return;
-    }
-
+  // Search hands back every tee for the selected course at once. Reuse any
+  // that already exist in the league (by name/tee/round type) instead of
+  // creating duplicates, and add the rest.
+  const applyCourseSearchResult = async (dataArray) => {
     setAddingCourse(true);
     try {
-      const created = await api.courses.create(data);
-      setCourses((prev) => [...prev, created]);
-      setCourseId(String(created.id));
+      const added = [];
+      for (const data of dataArray) {
+        const existing = courses.find(
+          (c) =>
+            c.name === data.name &&
+            c.tee_name === data.tee_name &&
+            c.round_type === data.round_type
+        );
+        added.push(existing || (await api.courses.create(data)));
+      }
+
+      setCourses((prev) => {
+        const existingIds = new Set(prev.map((c) => c.id));
+        return [...prev, ...added.filter((c) => !existingIds.has(c.id))];
+      });
+      setCourseName(dataArray[0].name);
+      setCourseId(added.length === 1 ? String(added[0].id) : "");
       setShowCourseSearch(false);
     } catch (err) {
       setStatus({ type: "error", message: `Couldn't add course: ${err.message}` });
@@ -239,16 +251,35 @@ export default function SubmitRound() {
           <select
             required
             className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-fairway-400"
-            value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
+            value={courseName}
+            onChange={(e) => handleCourseNameChange(e.target.value)}
           >
             <option value="">Select course</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} - {c.tee_name} ({c.round_type} holes)
+            {courseNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
               </option>
             ))}
           </select>
+
+          {courseName && (
+            <div className="mt-2">
+              <label className="block text-sm font-medium mb-1">Tee</label>
+              <select
+                required
+                className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-fairway-400"
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+              >
+                <option value="">Select tee</option>
+                {teesForCourse.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.tee_name} ({c.round_type} holes, slope {c.slope_rating})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {!showCourseSearch ? (
             <button

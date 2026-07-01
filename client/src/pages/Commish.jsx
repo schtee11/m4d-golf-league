@@ -34,31 +34,23 @@ export default function Commish() {
     setTeeRows((rows) => (rows.length > 1 ? rows.filter((_, idx) => idx !== i) : rows));
   };
 
-  // Search results fill in a tee row rather than replacing the whole form,
-  // so searching a course's Blue tee then its White tee builds up the list.
-  const applyCourseSearchResult = (data) => {
-    const newRow = {
-      tee_name: data.tee_name,
-      slope_rating: String(data.slope_rating),
-      course_rating: String(data.course_rating),
-    };
-
-    setCourseForm((prev) => {
-      const switchingCourse = prev.name && prev.name !== data.name;
-      setTeeRows((rows) => {
-        if (switchingCourse) return [newRow];
-        const emptyIdx = rows.findIndex(
-          (r) => !r.tee_name && !r.slope_rating && !r.course_rating
-        );
-        if (emptyIdx !== -1) {
-          const updated = [...rows];
-          updated[emptyIdx] = newRow;
-          return updated;
-        }
-        return [...rows, newRow];
-      });
-      return { name: data.name, round_type: data.round_type, par: String(data.par), hole_pars: data.hole_pars.join(",") };
+  // Search hands back every tee for the selected course at once — fill the
+  // shared fields from the first, and one tee row per tee.
+  const applyCourseSearchResult = (dataArray) => {
+    const [first] = dataArray;
+    setCourseForm({
+      name: first.name,
+      round_type: first.round_type,
+      par: String(first.par),
+      hole_pars: first.hole_pars.join(","),
     });
+    setTeeRows(
+      dataArray.map((d) => ({
+        tee_name: d.tee_name,
+        slope_rating: String(d.slope_rating),
+        course_rating: String(d.course_rating),
+      }))
+    );
   };
 
   const refresh = () => {
