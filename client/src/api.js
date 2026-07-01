@@ -27,6 +27,7 @@ export const api = {
   courses: {
     list: () => request("/courses"),
     create: (data) => request("/courses", { method: "POST", body: JSON.stringify(data) }),
+    search: (q) => request(`/courses/search?q=${encodeURIComponent(q)}`),
   },
   weeks: {
     list: () => request("/weeks"),

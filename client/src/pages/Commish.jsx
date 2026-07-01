@@ -23,6 +23,53 @@ export default function Commish() {
     hole_pars: "",
   });
 
+  const [courseSearchQuery, setCourseSearchQuery] = useState("");
+  const [courseSearchResults, setCourseSearchResults] = useState([]);
+  const [courseSearchStatus, setCourseSearchStatus] = useState(null); // null | "loading" | "error"
+
+  const searchCourses = async (e) => {
+    e.preventDefault();
+    if (courseSearchQuery.trim().length < 3) {
+      setCourseSearchStatus("error");
+      return;
+    }
+    setCourseSearchStatus("loading");
+    try {
+      const { results } = await api.courses.search(courseSearchQuery);
+      setCourseSearchResults(results);
+      setCourseSearchStatus(null);
+    } catch (err) {
+      setCourseSearchStatus("error");
+    }
+  };
+
+  // subset: "all" uses every hole from the tee; "front"/"back" splits an 18-hole
+  // tee into a 9-hole round for leagues that play 9s on that course.
+  const applySearchResult = (result, subset) => {
+    let holePars = result.hole_pars;
+    let roundType = String(result.number_of_holes);
+
+    if (subset === "front") {
+      holePars = holePars.slice(0, 9);
+      roundType = "9";
+    } else if (subset === "back") {
+      holePars = holePars.slice(holePars.length - 9);
+      roundType = "9";
+    }
+
+    setCourseForm({
+      name: result.club_name,
+      tee_name: `${result.tee_name} (${result.gender === "female" ? "W" : "M"})`,
+      round_type: roundType,
+      slope_rating: result.slope_rating,
+      course_rating: result.course_rating,
+      par: holePars.reduce((sum, p) => sum + p, 0),
+      hole_pars: holePars.join(","),
+    });
+    setCourseSearchResults([]);
+    setCourseSearchQuery("");
+  };
+
   const refresh = () => {
     api.players.list().then(setPlayers);
     api.courses.list().then(setCourses);
@@ -177,6 +224,85 @@ export default function Commish() {
       {/* Courses */}
       <section className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-3">Courses</h2>
+
+        <div className="mb-6 p-4 bg-fairway-50 rounded-lg border border-fairway-100">
+          <h3 className="text-sm font-semibold mb-2">Search course database</h3>
+          <form onSubmit={searchCourses} className="flex gap-2">
+            <input
+              className="flex-1 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+              placeholder="Course name (e.g. Pebble Beach)"
+              autoComplete="off"
+              value={courseSearchQuery}
+              onChange={(e) => setCourseSearchQuery(e.target.value)}
+            />
+            <button className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 text-white px-5 rounded-lg font-medium">
+              Search
+            </button>
+          </form>
+
+          {courseSearchStatus === "loading" && (
+            <p className="text-sm text-fairway-500 mt-2">Searching...</p>
+          )}
+          {courseSearchStatus === "error" && (
+            <p className="text-sm text-red-600 mt-2">
+              Search failed. Try a longer or different course name.
+            </p>
+          )}
+
+          {courseSearchResults.length > 0 && (
+            <ul className="mt-3 space-y-2 max-h-96 overflow-y-auto">
+              {courseSearchResults.map((r, i) => (
+                <li key={i} className="bg-white p-3 rounded-lg border border-fairway-200">
+                  <div className="text-sm font-semibold">
+                    {r.club_name}
+                    {r.city && (
+                      <span className="text-fairway-500 font-normal">
+                        {" "}
+                        &middot; {r.city}, {r.state || r.country}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-fairway-600 mb-2">
+                    {r.tee_name} tee ({r.gender === "female" ? "women's" : "men's"}) &middot;{" "}
+                    {r.number_of_holes} holes &middot; Slope {r.slope_rating}, Rating{" "}
+                    {r.course_rating}, Par {r.par}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="min-h-[40px] px-3 text-sm bg-fairway-500 hover:bg-fairway-600 text-white rounded-lg"
+                      onClick={() => applySearchResult(r, "all")}
+                    >
+                      Use all {r.number_of_holes}
+                    </button>
+                    {r.number_of_holes === 18 && (
+                      <>
+                        <button
+                          type="button"
+                          className="min-h-[40px] px-3 text-sm bg-fairway-100 hover:bg-fairway-200 text-fairway-700 rounded-lg"
+                          onClick={() => applySearchResult(r, "front")}
+                        >
+                          Front 9 only
+                        </button>
+                        <button
+                          type="button"
+                          className="min-h-[40px] px-3 text-sm bg-fairway-100 hover:bg-fairway-200 text-fairway-700 rounded-lg"
+                          onClick={() => applySearchResult(r, "back")}
+                        >
+                          Back 9 only
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs text-fairway-400 mt-2">
+            Selecting a result fills in the form below — review it, then hit Add Course.
+          </p>
+        </div>
+
         <form onSubmit={addCourse} className="space-y-2 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input

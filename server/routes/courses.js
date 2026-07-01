@@ -3,6 +3,62 @@ import { pool } from "../db.js";
 
 const router = express.Router();
 
+// GET /api/courses/search?q=... - search external course database (GolfCourseAPI)
+// Flattens each course's tees into individual selectable results with hole-by-hole par data.
+// Keeps the API key server-side; the client never talks to GolfCourseAPI directly.
+router.get("/search", async (req, res) => {
+  const { q } = req.query;
+  if (!q || q.trim().length < 3) {
+    return res.status(400).json({ error: "q must be at least 3 characters" });
+  }
+
+  const apiKey = process.env.GOLF_COURSE_API_KEY;
+  if (!apiKey) {
+    return res.status(501).json({ error: "Course search is not configured (missing GOLF_COURSE_API_KEY)" });
+  }
+
+  try {
+    const apiRes = await fetch(
+      `https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(q)}`,
+      { headers: { Authorization: `Key ${apiKey}` } }
+    );
+
+    if (!apiRes.ok) {
+      return res.status(502).json({ error: "Course search provider returned an error" });
+    }
+
+    const data = await apiRes.json();
+    const results = [];
+
+    for (const course of data.courses || []) {
+      for (const gender of ["male", "female"]) {
+        for (const tee of course.tees?.[gender] || []) {
+          results.push({
+            source: "golfcourseapi",
+            source_id: course.id,
+            club_name: course.club_name,
+            city: course.location?.city,
+            state: course.location?.state,
+            country: course.location?.country,
+            tee_name: tee.tee_name,
+            gender,
+            slope_rating: tee.slope_rating,
+            course_rating: tee.course_rating,
+            par: tee.par_total,
+            number_of_holes: tee.number_of_holes,
+            hole_pars: (tee.holes || []).map((h) => h.par),
+          });
+        }
+      }
+    }
+
+    res.json({ results });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to search courses" });
+  }
+});
+
 // GET all courses
 router.get("/", async (req, res) => {
   try {
