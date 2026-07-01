@@ -14,20 +14,50 @@ export default function Commish() {
   const [newWeekStart, setNewWeekStart] = useState("");
   const [newWeekEnd, setNewWeekEnd] = useState("");
 
+  // Course name/holes are shared; each course can have several tees
+  // (Blue, White, Red...), each with its own slope/rating, added together
+  // in one submission instead of repeating the whole form per tee.
   const [courseForm, setCourseForm] = useState({
     name: "",
-    tee_name: "",
     round_type: "18",
-    slope_rating: "",
-    course_rating: "",
     par: "",
     hole_pars: "",
   });
+  const emptyTeeRow = { tee_name: "", slope_rating: "", course_rating: "" };
+  const [teeRows, setTeeRows] = useState([{ ...emptyTeeRow }]);
 
+  const updateTeeRow = (i, field, value) => {
+    setTeeRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+  };
+  const addTeeRow = () => setTeeRows((rows) => [...rows, { ...emptyTeeRow }]);
+  const removeTeeRow = (i) => {
+    setTeeRows((rows) => (rows.length > 1 ? rows.filter((_, idx) => idx !== i) : rows));
+  };
+
+  // Search results fill in a tee row rather than replacing the whole form,
+  // so searching a course's Blue tee then its White tee builds up the list.
   const applyCourseSearchResult = (data) => {
-    setCourseForm({
-      ...data,
-      hole_pars: data.hole_pars.join(","),
+    const newRow = {
+      tee_name: data.tee_name,
+      slope_rating: String(data.slope_rating),
+      course_rating: String(data.course_rating),
+    };
+
+    setCourseForm((prev) => {
+      const switchingCourse = prev.name && prev.name !== data.name;
+      setTeeRows((rows) => {
+        if (switchingCourse) return [newRow];
+        const emptyIdx = rows.findIndex(
+          (r) => !r.tee_name && !r.slope_rating && !r.course_rating
+        );
+        if (emptyIdx !== -1) {
+          const updated = [...rows];
+          updated[emptyIdx] = newRow;
+          return updated;
+        }
+        return [...rows, newRow];
+      });
+      return { name: data.name, round_type: data.round_type, par: String(data.par), hole_pars: data.hole_pars.join(",") };
     });
   };
 
@@ -68,6 +98,8 @@ export default function Commish() {
     refresh();
   };
 
+  const [addingCourses, setAddingCourses] = useState(false);
+
   const addCourse = async (e) => {
     e.preventDefault();
     const holePars = courseForm.hole_pars
@@ -75,24 +107,32 @@ export default function Commish() {
       .map((s) => Number(s.trim()))
       .filter((n) => !isNaN(n));
 
-    await api.courses.create({
-      ...courseForm,
-      slope_rating: Number(courseForm.slope_rating),
-      course_rating: Number(courseForm.course_rating),
-      par: Number(courseForm.par),
-      hole_pars: holePars,
-    });
+    const validTees = teeRows.filter(
+      (t) => t.tee_name && t.slope_rating !== "" && t.course_rating !== ""
+    );
+    if (validTees.length === 0) return;
 
-    setCourseForm({
-      name: "",
-      tee_name: "",
-      round_type: "18",
-      slope_rating: "",
-      course_rating: "",
-      par: "",
-      hole_pars: "",
-    });
-    refresh();
+    setAddingCourses(true);
+    try {
+      await Promise.all(
+        validTees.map((t) =>
+          api.courses.create({
+            name: courseForm.name,
+            tee_name: t.tee_name,
+            round_type: courseForm.round_type,
+            slope_rating: Number(t.slope_rating),
+            course_rating: Number(t.course_rating),
+            par: Number(courseForm.par),
+            hole_pars: holePars,
+          })
+        )
+      );
+      setCourseForm({ name: "", round_type: "18", par: "", hole_pars: "" });
+      setTeeRows([{ ...emptyTeeRow }]);
+      refresh();
+    } finally {
+      setAddingCourses(false);
+    }
   };
 
   return (
@@ -210,15 +250,6 @@ export default function Commish() {
               onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })}
               required
             />
-            <input
-              className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
-              placeholder="Tee name (e.g. Blue)"
-              value={courseForm.tee_name}
-              onChange={(e) => setCourseForm({ ...courseForm, tee_name: e.target.value })}
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <select
               className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
               value={courseForm.round_type}
@@ -227,24 +258,8 @@ export default function Commish() {
               <option value="18">18 holes</option>
               <option value="9">9 holes</option>
             </select>
-            <input
-              type="number"
-              step="0.1"
-              className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
-              placeholder="Slope"
-              value={courseForm.slope_rating}
-              onChange={(e) => setCourseForm({ ...courseForm, slope_rating: e.target.value })}
-              required
-            />
-            <input
-              type="number"
-              step="0.1"
-              className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
-              placeholder="Course Rating"
-              value={courseForm.course_rating}
-              onChange={(e) => setCourseForm({ ...courseForm, course_rating: e.target.value })}
-              required
-            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
               type="number"
               className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
@@ -253,16 +268,72 @@ export default function Commish() {
               onChange={(e) => setCourseForm({ ...courseForm, par: e.target.value })}
               required
             />
+            <input
+              className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+              placeholder="Hole pars, comma separated (e.g. 4,4,3,5,4,4,3,4,5,...)"
+              value={courseForm.hole_pars}
+              onChange={(e) => setCourseForm({ ...courseForm, hole_pars: e.target.value })}
+              required
+            />
           </div>
-          <input
-            className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
-            placeholder="Hole pars, comma separated (e.g. 4,4,3,5,4,4,3,4,5,...)"
-            value={courseForm.hole_pars}
-            onChange={(e) => setCourseForm({ ...courseForm, hole_pars: e.target.value })}
-            required
-          />
-          <button className="w-full min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.99] text-white py-3 rounded-lg font-medium transition-all">
-            Add Course
+
+          <div className="pt-2">
+            <div className="text-sm font-semibold text-fairway-700 mb-2">Tees</div>
+            <div className="space-y-2">
+              {teeRows.map((tee, i) => (
+                <div key={i} className="flex flex-wrap gap-2 items-center">
+                  <input
+                    className="flex-1 min-w-[120px] min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+                    placeholder="Tee name (e.g. Blue)"
+                    value={tee.tee_name}
+                    onChange={(e) => updateTeeRow(i, "tee_name", e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    className="w-24 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+                    placeholder="Slope"
+                    value={tee.slope_rating}
+                    onChange={(e) => updateTeeRow(i, "slope_rating", e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    className="w-28 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+                    placeholder="Rating"
+                    value={tee.course_rating}
+                    onChange={(e) => updateTeeRow(i, "course_rating", e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    disabled={teeRows.length === 1}
+                    onClick={() => removeTeeRow(i)}
+                    className="min-h-[48px] px-3 text-fairway-400 hover:text-red-600 disabled:opacity-30 disabled:hover:text-fairway-400 transition-colors"
+                    aria-label="Remove tee"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addTeeRow}
+              className="mt-2 text-sm text-fairway-600 hover:text-fairway-800 font-medium transition-colors"
+            >
+              + Add another tee
+            </button>
+          </div>
+
+          <button
+            disabled={addingCourses}
+            className="w-full min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.99] disabled:opacity-60 text-white py-3 rounded-lg font-medium transition-all"
+          >
+            {addingCourses
+              ? "Adding..."
+              : teeRows.filter((t) => t.tee_name).length > 1
+              ? "Add Course (all tees)"
+              : "Add Course"}
           </button>
         </form>
 
