@@ -128,15 +128,21 @@ export default function Commish() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-8">
-      <h1 className="text-2xl font-extrabold tracking-tight">Commish Panel</h1>
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
+      <div className="mb-1 animate-fade-up">
+        <div className="eyebrow mb-1.5">Admin</div>
+        <h1 className="page-title">Commish Panel</h1>
+        <p className="text-sm text-fairway-500 mt-1.5">
+          Manage players, weeks, and the course database.
+        </p>
+      </div>
 
       {/* Players */}
-      <section className="bg-white rounded-xl shadow-card border border-fairway-100 p-6">
-        <h2 className="text-lg font-bold mb-3 text-fairway-800">Players</h2>
-        <form onSubmit={addPlayer} className="flex flex-wrap gap-2 mb-4">
+      <section className="card p-6 animate-fade-up">
+        <h2 className="section-heading mb-4">Players</h2>
+        <form onSubmit={addPlayer} className="flex flex-wrap gap-2 mb-5">
           <input
-            className="flex-1 min-w-[140px] min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+            className="input-field flex-1 min-w-[140px]"
             placeholder="Name"
             value={newPlayerName}
             onChange={(e) => setNewPlayerName(e.target.value)}
@@ -145,40 +151,41 @@ export default function Commish() {
           <input
             type="number"
             step="0.1"
-            className="w-24 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+            className="input-field w-24"
             placeholder="HI"
             value={newPlayerHandicap}
             onChange={(e) => setNewPlayerHandicap(e.target.value)}
             required
           />
-          <button className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.98] text-white px-5 rounded-lg font-medium transition-all">
-            Add
-          </button>
+          <button className="btn-gold shrink-0">Add</button>
         </form>
 
-        <ul className="divide-y divide-fairway-100">
+        <ul className="divide-y divide-fairway-900/8">
           {players.map((p) => (
             <li key={p.id} className="py-2.5 flex items-center justify-between">
-              <span className="font-medium">{p.name}</span>
+              <span className="font-medium text-fairway-900">{p.name}</span>
               <input
                 type="number"
                 step="0.1"
                 defaultValue={p.handicap_index}
-                className="w-24 min-h-[44px] p-2 border border-fairway-300 rounded-lg text-right"
+                className="w-24 min-h-[44px] p-2 border border-fairway-900/20 rounded-lg text-right bg-white focus:outline-none focus:ring-2 focus:ring-gold-400/60 focus:border-gold-400"
                 onBlur={(e) => updateHandicap(p.id, e.target.value)}
               />
             </li>
           ))}
+          {players.length === 0 && (
+            <li className="py-6 text-center text-sm text-fairway-400">No players yet.</li>
+          )}
         </ul>
       </section>
 
       {/* Weeks */}
-      <section className="bg-white rounded-xl shadow-card border border-fairway-100 p-6">
-        <h2 className="text-lg font-bold mb-3 text-fairway-800">Weeks</h2>
-        <form onSubmit={addWeek} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+      <section className="card p-6 animate-fade-up">
+        <h2 className="section-heading mb-4">Weeks</h2>
+        <form onSubmit={addWeek} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
           <input
             type="number"
-            className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+            className="input-field"
             placeholder="Week #"
             value={newWeekNumber}
             onChange={(e) => setNewWeekNumber(e.target.value)}
@@ -186,45 +193,49 @@ export default function Commish() {
           />
           <input
             type="date"
-            className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+            className="input-field"
             value={newWeekStart}
             onChange={(e) => setNewWeekStart(e.target.value)}
             required
           />
           <input
             type="date"
-            className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+            className="input-field"
             value={newWeekEnd}
             onChange={(e) => setNewWeekEnd(e.target.value)}
             required
           />
-          <button className="sm:col-span-3 min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.99] text-white py-3 rounded-lg font-medium transition-all">
-            Add Week
-          </button>
+          <button className="btn-gold sm:col-span-3">Add Week</button>
         </form>
-        <ul className="divide-y divide-fairway-100">
+        <ul className="divide-y divide-fairway-900/8">
           {weeks.map((w) => (
             <li key={w.id} className="py-2.5 flex items-center justify-between">
-              <span className="font-medium">
-                Week {w.week_number} ({w.start_date} – {w.end_date})
+              <span className="font-medium text-fairway-900">
+                Week {w.week_number}{" "}
+                <span className="text-fairway-400 font-normal">
+                  ({w.start_date} – {w.end_date})
+                </span>
               </span>
               <span
-                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                className={`badge ${
                   w.status === "open"
                     ? "bg-fairway-100 text-fairway-700"
-                    : "bg-fairway-900/10 text-fairway-500"
+                    : "bg-fairway-950/10 text-fairway-500"
                 }`}
               >
                 {w.status}
               </span>
             </li>
           ))}
+          {weeks.length === 0 && (
+            <li className="py-6 text-center text-sm text-fairway-400">No weeks yet.</li>
+          )}
         </ul>
       </section>
 
       {/* Courses */}
-      <section className="bg-white rounded-xl shadow-card border border-fairway-100 p-6">
-        <h2 className="text-lg font-bold mb-3 text-fairway-800">Courses</h2>
+      <section className="card p-6 animate-fade-up">
+        <h2 className="section-heading mb-4">Courses</h2>
 
         <div className="mb-6">
           <CourseSearchPicker onApply={applyCourseSearchResult} />
@@ -233,17 +244,17 @@ export default function Commish() {
           </p>
         </div>
 
-        <form onSubmit={addCourse} className="space-y-2 mb-4">
+        <form onSubmit={addCourse} className="space-y-3 mb-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
-              className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+              className="input-field"
               placeholder="Course name"
               value={courseForm.name}
               onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })}
               required
             />
             <select
-              className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+              className="input-field"
               value={courseForm.round_type}
               onChange={(e) => setCourseForm({ ...courseForm, round_type: e.target.value })}
             >
@@ -254,14 +265,14 @@ export default function Commish() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
               type="number"
-              className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+              className="input-field"
               placeholder="Par"
               value={courseForm.par}
               onChange={(e) => setCourseForm({ ...courseForm, par: e.target.value })}
               required
             />
             <input
-              className="min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+              className="input-field"
               placeholder="Hole pars, comma separated (e.g. 4,4,3,5,4,4,3,4,5,...)"
               value={courseForm.hole_pars}
               onChange={(e) => setCourseForm({ ...courseForm, hole_pars: e.target.value })}
@@ -270,12 +281,12 @@ export default function Commish() {
           </div>
 
           <div className="pt-2">
-            <div className="text-sm font-semibold text-fairway-700 mb-2">Tees</div>
+            <div className="field-label !mb-2.5">Tees</div>
             <div className="space-y-2">
               {teeRows.map((tee, i) => (
                 <div key={i} className="flex flex-wrap gap-2 items-center">
                   <input
-                    className="flex-1 min-w-[120px] min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+                    className="input-field flex-1 min-w-[120px]"
                     placeholder="Tee name (e.g. Blue)"
                     value={tee.tee_name}
                     onChange={(e) => updateTeeRow(i, "tee_name", e.target.value)}
@@ -283,7 +294,7 @@ export default function Commish() {
                   <input
                     type="number"
                     step="0.1"
-                    className="w-24 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+                    className="input-field w-24"
                     placeholder="Slope"
                     value={tee.slope_rating}
                     onChange={(e) => updateTeeRow(i, "slope_rating", e.target.value)}
@@ -291,7 +302,7 @@ export default function Commish() {
                   <input
                     type="number"
                     step="0.1"
-                    className="w-28 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+                    className="input-field w-28"
                     placeholder="Rating"
                     value={tee.course_rating}
                     onChange={(e) => updateTeeRow(i, "course_rating", e.target.value)}
@@ -311,16 +322,13 @@ export default function Commish() {
             <button
               type="button"
               onClick={addTeeRow}
-              className="mt-2 text-sm text-fairway-600 hover:text-fairway-800 font-medium transition-colors"
+              className="btn-ghost text-sm mt-2.5"
             >
               + Add another tee
             </button>
           </div>
 
-          <button
-            disabled={addingCourses}
-            className="w-full min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.99] disabled:opacity-60 text-white py-3 rounded-lg font-medium transition-all"
-          >
+          <button disabled={addingCourses} className="btn-primary w-full">
             {addingCourses
               ? "Adding..."
               : teeRows.filter((t) => t.tee_name).length > 1
@@ -329,13 +337,21 @@ export default function Commish() {
           </button>
         </form>
 
-        <ul className="divide-y divide-fairway-100">
+        <ul className="divide-y divide-fairway-900/8">
           {courses.map((c) => (
-            <li key={c.id} className="py-2 text-sm">
-              {c.name} - {c.tee_name} ({c.round_type} holes, slope {c.slope_rating}, rating{" "}
-              {c.course_rating})
+            <li key={c.id} className="py-2.5 text-sm flex items-center justify-between gap-2">
+              <span className="text-fairway-900">
+                <span className="font-medium">{c.name}</span>
+                <span className="text-fairway-400"> — {c.tee_name}</span>
+              </span>
+              <span className="text-xs text-fairway-400 shrink-0 tabular-nums">
+                {c.round_type}h &middot; slope {c.slope_rating} &middot; rating {c.course_rating}
+              </span>
             </li>
           ))}
+          {courses.length === 0 && (
+            <li className="py-6 text-center text-sm text-fairway-400">No courses yet.</li>
+          )}
         </ul>
       </section>
     </div>

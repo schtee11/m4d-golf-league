@@ -7,11 +7,135 @@ html {
 }
 
 body {
-  @apply bg-fairway-50 text-fairway-900 antialiased;
-  background-image: radial-gradient(circle at top, rgb(74 158 74 / 0.06), transparent 55%);
+  @apply bg-cream-100 text-fairway-900 antialiased;
+  background-image: radial-gradient(circle at top, rgb(182 139 48 / 0.07), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgb(21 37 18 / 0.05), transparent 40%);
   background-attachment: fixed;
 }
 
 ::selection {
-  @apply bg-fairway-400/30;
+  @apply bg-gold-300/40;
+}
+
+:focus-visible {
+  outline: 2px solid theme("colors.gold.400");
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-fairway-200;
+  border-radius: 999px;
+  border: 2px solid theme("colors.cream.100");
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-fairway-300;
+}
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  /* ── Layout & surfaces ─────────────────────────────────────────── */
+  .card {
+    @apply bg-white/95 rounded-2xl border border-fairway-900/10 shadow-card;
+  }
+
+  .divider {
+    @apply border-t border-fairway-900/10;
+  }
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  .eyebrow {
+    @apply text-[0.68rem] font-semibold tracking-[0.16em] uppercase text-gold-600;
+  }
+
+  .page-title {
+    @apply font-serif text-3xl sm:text-4xl font-semibold tracking-tight text-fairway-950;
+  }
+
+  .section-heading {
+    @apply font-serif text-xl sm:text-2xl font-semibold tracking-tight text-fairway-950;
+  }
+
+  .field-label {
+    @apply block text-[0.72rem] font-semibold tracking-wide uppercase text-fairway-500 mb-1.5;
+  }
+
+  /* ── Forms ──────────────────────────────────────────────────────── */
+  .input-field {
+    @apply w-full min-h-[48px] px-3.5 py-3 text-base bg-white border border-fairway-900/20 rounded-lg text-fairway-900 placeholder:text-fairway-400/80 shadow-inset transition-all duration-150;
+    @apply focus:outline-none focus:ring-2 focus:ring-gold-400/60 focus:border-gold-400;
+  }
+
+  select.input-field {
+    @apply appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%233a6030' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: right 0.9rem center;
+    padding-right: 2.5rem;
+  }
+
+  /* ── Buttons ────────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 min-h-[48px] px-5 rounded-lg text-[0.92rem] font-semibold tracking-tight transition-all duration-150 active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100;
+  }
+  .btn-primary {
+    @apply btn bg-fairway-900 text-cream-50 shadow-sm hover:bg-fairway-800;
+  }
+  .btn-gold {
+    @apply btn bg-gold-500 text-fairway-950 shadow-gold hover:bg-gold-400;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-fairway-800 border border-fairway-900/20 hover:bg-fairway-50;
+  }
+  .btn-ghost {
+    @apply btn min-h-0 h-auto px-0 text-fairway-600 hover:text-fairway-900 font-medium;
+  }
+  .btn-danger {
+    @apply btn bg-white text-red-700 border border-red-200 hover:bg-red-50;
+  }
+  .btn-sm {
+    @apply min-h-[38px] px-3.5 text-sm;
+  }
+
+  /* ── Badges / status pills ─────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full;
+  }
+
+  /* ── Tables ─────────────────────────────────────────────────────── */
+  .table-head {
+    @apply bg-fairway-950 text-cream-100;
+  }
+  .table-head th {
+    @apply p-3.5 text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-cream-200/90;
+  }
+  .table-row {
+    @apply border-t border-fairway-900/10 transition-colors hover:bg-gold-50/60;
+  }
+
+  /* ── Loading skeletons ─────────────────────────────────────────── */
+  .skeleton {
+    @apply rounded-md bg-fairway-100 bg-[length:400px_100%] animate-shimmer;
+    background-image: linear-gradient(
+      90deg,
+      theme("colors.fairway.100") 0%,
+      theme("colors.cream.200") 50%,
+      theme("colors.fairway.100") 100%
+    );
+  }
 }

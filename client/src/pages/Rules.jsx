@@ -85,20 +85,28 @@ const sections = [
 export default function Rules() {
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-extrabold tracking-tight mb-4">Rules</h1>
+      <div className="mb-7 animate-fade-up">
+        <div className="eyebrow mb-1.5">The Fine Print</div>
+        <h1 className="page-title">Rules</h1>
+        <p className="text-sm text-fairway-500 mt-1.5">
+          How scoring, standings, and setup work.
+        </p>
+      </div>
 
-      <div className="space-y-6">
-        {sections.map((section) => (
-          <section
-            key={section.title}
-            className="bg-white rounded-xl shadow-card border border-fairway-100 p-6"
-          >
-            <h2 className="text-lg font-bold text-fairway-800 mb-4">{section.title}</h2>
-            <dl className="space-y-4">
+      <div className="space-y-5">
+        {sections.map((section, si) => (
+          <section key={section.title} className="card p-6 animate-fade-up">
+            <div className="flex items-center gap-3 mb-5">
+              <span className="w-8 h-8 rounded-full bg-fairway-950 text-gold-400 font-serif text-sm font-semibold flex items-center justify-center shrink-0">
+                {si + 1}
+              </span>
+              <h2 className="section-heading">{section.title}</h2>
+            </div>
+            <dl className="space-y-4 sm:pl-11">
               {section.items.map((item) => (
-                <div key={item.term}>
-                  <dt className="font-semibold text-fairway-700 text-sm">{item.term}</dt>
-                  <dd className="text-sm text-fairway-600 mt-0.5 leading-relaxed">
+                <div key={item.term} className="border-l-2 border-gold-300/70 pl-3.5">
+                  <dt className="font-semibold text-fairway-900 text-sm">{item.term}</dt>
+                  <dd className="text-sm text-fairway-500 mt-0.5 leading-relaxed">
                     {item.detail}
                   </dd>
                 </div>

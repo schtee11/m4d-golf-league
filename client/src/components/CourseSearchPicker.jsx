@@ -74,13 +74,13 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
   const hasEighteen = selectedGroup?.tees.some((t) => t.number_of_holes === 18);
 
   return (
-    <div className="p-4 bg-fairway-50 rounded-xl border border-fairway-100">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold">Search course database</h3>
+    <div className="p-4 bg-fairway-50/70 rounded-xl border border-fairway-900/10">
+      <div className="flex items-center justify-between mb-2.5">
+        <h3 className="text-sm font-semibold text-fairway-900">Search course database</h3>
         {onCancel && (
           <button
             type="button"
-            className="text-sm text-fairway-500 hover:text-fairway-700"
+            className="text-sm text-fairway-500 hover:text-fairway-800"
             onClick={onCancel}
           >
             Close
@@ -95,7 +95,7 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
               silently mangles the DOM and breaks React state). */}
           <div className="flex gap-2">
             <input
-              className="flex-1 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+              className="input-field flex-1"
               placeholder="Course name (e.g. Pebble Beach)"
               autoComplete="off"
               value={query}
@@ -104,23 +104,24 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
                 if (e.key === "Enter") search(e);
               }}
             />
-            <button
-              type="button"
-              className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.98] text-white px-5 rounded-lg font-medium transition-all"
-              onClick={search}
-            >
+            <button type="button" className="btn-gold shrink-0" onClick={search}>
               Search
             </button>
           </div>
 
-          {status === "loading" && <p className="text-sm text-fairway-500 mt-2">Searching...</p>}
+          {status === "loading" && (
+            <p className="text-sm text-fairway-500 mt-2.5 flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-fairway-300 border-t-fairway-700 animate-spin" />
+              Searching...
+            </p>
+          )}
           {status === "error" && (
-            <p className="text-sm text-red-600 mt-2">
+            <p className="text-sm text-red-600 mt-2.5">
               Search failed. Try a longer or different course name.
             </p>
           )}
           {status === "empty" && (
-            <p className="text-sm text-fairway-500 mt-2">
+            <p className="text-sm text-fairway-500 mt-2.5">
               No courses found. Try a different spelling, or add it manually below.
             </p>
           )}
@@ -131,12 +132,12 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
                 <li key={g.key}>
                   <button
                     type="button"
-                    className="w-full text-left min-h-[56px] bg-white p-3 rounded-lg border border-fairway-200 hover:border-fairway-400"
+                    className="w-full text-left min-h-[56px] bg-white p-3 rounded-lg border border-fairway-900/10 hover:border-gold-400 hover:shadow-sm transition-all"
                     onClick={() => setSelectedGroup(g)}
                   >
-                    <div className="text-sm font-semibold">{g.club_name}</div>
+                    <div className="text-sm font-semibold text-fairway-900">{g.club_name}</div>
                     {g.city && (
-                      <div className="text-xs text-fairway-500">
+                      <div className="text-xs text-fairway-500 mt-0.5">
                         {g.city}, {g.state || g.country} &middot; {g.tees.length} tee
                         {g.tees.length === 1 ? "" : "s"}
                       </div>
@@ -153,12 +154,12 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
         <div>
           <button
             type="button"
-            className="text-sm text-fairway-600 hover:text-fairway-800 mb-2"
+            className="text-sm text-fairway-600 hover:text-fairway-900 mb-2.5 font-medium"
             onClick={() => setSelectedGroup(null)}
           >
             &larr; Back to courses
           </button>
-          <div className="text-sm font-semibold mb-2">
+          <div className="text-sm font-semibold text-fairway-900 mb-2.5">
             {selectedGroup.club_name}
             {selectedGroup.city && (
               <span className="text-fairway-500 font-normal">
@@ -167,14 +168,17 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
               </span>
             )}
           </div>
-          <p className="text-xs text-fairway-500 mb-2">
+          <p className="text-xs text-fairway-500 mb-2.5">
             All tees below will be added together — pick the one you played from the Tee
             dropdown afterward.
           </p>
           <ul className="space-y-1.5 max-h-72 overflow-y-auto mb-3">
             {selectedGroup.tees.map((tee, i) => (
-              <li key={i} className="bg-white p-2.5 rounded-lg border border-fairway-200 text-sm">
-                <span className="font-semibold">
+              <li
+                key={i}
+                className="bg-white p-2.5 rounded-lg border border-fairway-900/10 text-sm"
+              >
+                <span className="font-semibold text-fairway-900">
                   {tee.tee_name} ({tee.gender === "female" ? "women's" : "men's"})
                 </span>
                 <span className="text-fairway-500">
@@ -186,11 +190,7 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
             ))}
           </ul>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="min-h-[44px] px-4 text-sm bg-fairway-500 hover:bg-fairway-600 active:scale-[0.98] text-white rounded-lg font-medium transition-all"
-              onClick={() => addAllTees("all")}
-            >
+            <button type="button" className="btn-gold btn-sm" onClick={() => addAllTees("all")}>
               Add all {selectedGroup.tees.length} tee
               {selectedGroup.tees.length === 1 ? "" : "s"}
             </button>
@@ -198,14 +198,14 @@ export default function CourseSearchPicker({ onApply, onCancel }) {
               <>
                 <button
                   type="button"
-                  className="min-h-[44px] px-4 text-sm bg-fairway-100 hover:bg-fairway-200 text-fairway-700 rounded-lg transition-colors"
+                  className="btn-secondary btn-sm"
                   onClick={() => addAllTees("front")}
                 >
                   Add as front 9
                 </button>
                 <button
                   type="button"
-                  className="min-h-[44px] px-4 text-sm bg-fairway-100 hover:bg-fairway-200 text-fairway-700 rounded-lg transition-colors"
+                  className="btn-secondary btn-sm"
                   onClick={() => addAllTees("back")}
                 >
                   Add as back 9

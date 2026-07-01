@@ -7,23 +7,25 @@ export default function HoleScoreStepper({ index, par, value, onChange }) {
   const diff = value - par;
   const diffLabel = diff === 0 ? "E" : diff > 0 ? `+${diff}` : `${diff}`;
   const diffClass =
-    diff <= -1
-      ? "text-blue-600 bg-blue-50"
+    diff <= -2
+      ? "text-gold-700 bg-gold-100"
+      : diff === -1
+      ? "text-fairway-700 bg-fairway-100"
       : diff === 0
-      ? "text-fairway-600 bg-fairway-50"
+      ? "text-fairway-500 bg-fairway-50"
       : diff === 1
-      ? "text-amber-600 bg-amber-50"
-      : "text-red-600 bg-red-50";
+      ? "text-amber-700 bg-amber-100"
+      : "text-red-700 bg-red-100";
 
   const dec = () => onChange(Math.max(MIN_SCORE, value - 1));
   const inc = () => onChange(value + 1);
 
   return (
-    <div className="bg-white border border-fairway-100 rounded-xl shadow-sm p-3 flex flex-col items-center gap-1.5">
-      <div className="text-[11px] font-semibold text-fairway-500 uppercase tracking-wide">
+    <div className="card p-3 flex flex-col items-center gap-1.5">
+      <div className="text-[10px] font-semibold text-fairway-400 uppercase tracking-wide">
         Hole {index + 1} &middot; Par {par}
       </div>
-      <div className="text-3xl font-extrabold text-fairway-900 tabular-nums leading-none my-1">
+      <div className="font-serif text-3xl font-semibold text-fairway-950 tabular-nums leading-none my-1">
         {value}
       </div>
       <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${diffClass}`}>
@@ -34,7 +36,7 @@ export default function HoleScoreStepper({ index, par, value, onChange }) {
           type="button"
           aria-label={`Decrease hole ${index + 1} score`}
           onClick={dec}
-          className="w-11 h-11 rounded-full bg-fairway-100 hover:bg-fairway-200 active:scale-95 text-fairway-700 text-xl font-bold flex items-center justify-center transition-all"
+          className="w-11 h-11 rounded-full bg-fairway-50 hover:bg-fairway-100 active:scale-95 text-fairway-700 text-xl font-bold flex items-center justify-center transition-all border border-fairway-900/10"
         >
           &minus;
         </button>
@@ -42,7 +44,7 @@ export default function HoleScoreStepper({ index, par, value, onChange }) {
           type="button"
           aria-label={`Increase hole ${index + 1} score`}
           onClick={inc}
-          className="w-11 h-11 rounded-full bg-fairway-500 hover:bg-fairway-600 active:scale-95 text-white text-xl font-bold flex items-center justify-center transition-all"
+          className="w-11 h-11 rounded-full bg-fairway-900 hover:bg-fairway-800 active:scale-95 text-cream-50 text-xl font-bold flex items-center justify-center transition-all"
         >
           +
         </button>

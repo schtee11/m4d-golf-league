@@ -179,219 +179,248 @@ export default function SubmitRound() {
 
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-extrabold tracking-tight mb-4">Submit a Round</h1>
+      <div className="mb-7 animate-fade-up">
+        <div className="eyebrow mb-1.5">New Entry</div>
+        <h1 className="page-title">Submit a Round</h1>
+        <p className="text-sm text-fairway-500 mt-1.5">
+          Log your score — handicap and points are calculated automatically.
+        </p>
+      </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-xl shadow-card border border-fairway-100 p-4 sm:p-6 space-y-5"
-      >
-        <div>
-          <label className="block text-sm font-medium mb-1">Player</label>
-          <select
-            required
-            className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-fairway-400"
-            value={playerId}
-            onChange={(e) => setPlayerId(e.target.value)}
-          >
-            <option value="">Select player</option>
-            {players.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} (HI: {p.handicap_index})
-              </option>
-            ))}
-          </select>
+      <form onSubmit={handleSubmit} className="card p-4 sm:p-6 animate-fade-up">
+        {/* ── Who & when ─────────────────────────────────────────── */}
+        <div className="space-y-4">
+          <h2 className="eyebrow">Who &amp; When</h2>
 
-          {!showAddPlayer ? (
-            <button
-              type="button"
-              className="mt-2 text-sm text-fairway-600 hover:text-fairway-800 font-medium transition-colors"
-              onClick={() => setShowAddPlayer(true)}
+          <div>
+            <label className="field-label">Player</label>
+            <select
+              required
+              className="input-field"
+              value={playerId}
+              onChange={(e) => setPlayerId(e.target.value)}
             >
-              New here? Add yourself
-            </button>
-          ) : (
-            <div className="mt-3 p-4 bg-fairway-50 rounded-xl border border-fairway-100">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold">Add yourself</h3>
-                <button
-                  type="button"
-                  className="text-sm text-fairway-500 hover:text-fairway-700"
-                  onClick={() => setShowAddPlayer(false)}
-                >
-                  Close
-                </button>
+              <option value="">Select player</option>
+              {players.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} (HI: {p.handicap_index})
+                </option>
+              ))}
+            </select>
+
+            {!showAddPlayer ? (
+              <button
+                type="button"
+                className="btn-ghost text-sm mt-2"
+                onClick={() => setShowAddPlayer(true)}
+              >
+                New here? Add yourself
+              </button>
+            ) : (
+              <div className="mt-3 p-4 bg-fairway-50/70 rounded-xl border border-fairway-900/10">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-fairway-900">Add yourself</h3>
+                  <button
+                    type="button"
+                    className="text-sm text-fairway-500 hover:text-fairway-800"
+                    onClick={() => setShowAddPlayer(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    className="input-field flex-1 min-w-[140px]"
+                    placeholder="Your name"
+                    autoComplete="off"
+                    value={newPlayerName}
+                    onChange={(e) => setNewPlayerName(e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    className="input-field w-28"
+                    placeholder="Handicap"
+                    value={newPlayerHandicap}
+                    onChange={(e) => setNewPlayerHandicap(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    disabled={addingPlayer}
+                    className="btn-primary shrink-0"
+                    onClick={addSelf}
+                  >
+                    {addingPlayer ? "Adding..." : "Add"}
+                  </button>
+                </div>
+                <p className="text-xs text-fairway-400 mt-2">
+                  Enter your current Handicap Index from GHIN.
+                </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <input
-                  className="flex-1 min-w-[140px] min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
-                  placeholder="Your name"
-                  autoComplete="off"
-                  value={newPlayerName}
-                  onChange={(e) => setNewPlayerName(e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.1"
-                  className="w-28 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
-                  placeholder="Handicap"
-                  value={newPlayerHandicap}
-                  onChange={(e) => setNewPlayerHandicap(e.target.value)}
-                />
-                <button
-                  type="button"
-                  disabled={addingPlayer}
-                  className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.98] disabled:opacity-60 text-white px-5 rounded-lg font-medium transition-all"
-                  onClick={addSelf}
-                >
-                  {addingPlayer ? "Adding..." : "Add"}
-                </button>
-              </div>
-              <p className="text-xs text-fairway-400 mt-2">
-                Enter your current Handicap Index from GHIN.
-              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="field-label">Week</label>
+              <select
+                required
+                className="input-field"
+                value={weekId}
+                onChange={(e) => setWeekId(e.target.value)}
+              >
+                <option value="">Select week</option>
+                {weeks.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    Week {w.week_number}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
+
+            <div>
+              <label className="field-label">Date Played</label>
+              <input
+                type="date"
+                required
+                className="input-field"
+                value={datePlayed}
+                onChange={(e) => setDatePlayed(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Week</label>
-          <select
-            required
-            className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-fairway-400"
-            value={weekId}
-            onChange={(e) => setWeekId(e.target.value)}
-          >
-            <option value="">Select week</option>
-            {weeks.map((w) => (
-              <option key={w.id} value={w.id}>
-                Week {w.week_number}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="divider my-6" />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Course</label>
-          <select
-            required
-            className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-fairway-400"
-            value={courseName}
-            onChange={(e) => handleCourseNameChange(e.target.value)}
-          >
-            <option value="">Select course</option>
-            {courseNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
+        {/* ── Where ──────────────────────────────────────────────── */}
+        <div className="space-y-4">
+          <h2 className="eyebrow">Where</h2>
+
+          <div>
+            <label className="field-label">Course</label>
+            <select
+              required
+              className="input-field"
+              value={courseName}
+              onChange={(e) => handleCourseNameChange(e.target.value)}
+            >
+              <option value="">Select course</option>
+              {courseNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {courseName && (
-            <div className="mt-2">
-              <label className="block text-sm font-medium mb-1">Holes</label>
-              <select
-                required
-                className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-fairway-400"
-                value={roundType}
-                onChange={(e) => handleRoundTypeChange(e.target.value)}
-              >
-                <option value="">Select holes</option>
-                {roundTypesForCourse.map((rt) => (
-                  <option key={rt} value={rt}>
-                    {rt} holes
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="field-label">Holes</label>
+                <select
+                  required
+                  className="input-field"
+                  value={roundType}
+                  onChange={(e) => handleRoundTypeChange(e.target.value)}
+                >
+                  <option value="">Select holes</option>
+                  {roundTypesForCourse.map((rt) => (
+                    <option key={rt} value={rt}>
+                      {rt} holes
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {courseName && roundType && (
-            <div className="mt-2">
-              <label className="block text-sm font-medium mb-1">Tee</label>
-              <select
-                required
-                className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-fairway-400"
-                value={courseId}
-                onChange={(e) => setCourseId(e.target.value)}
-              >
-                <option value="">Select tee</option>
-                {teesForRoundType.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.tee_name} (slope {c.slope_rating})
-                  </option>
-                ))}
-              </select>
+              {roundType && (
+                <div>
+                  <label className="field-label">Tee</label>
+                  <select
+                    required
+                    className="input-field"
+                    value={courseId}
+                    onChange={(e) => setCourseId(e.target.value)}
+                  >
+                    <option value="">Select tee</option>
+                    {teesForRoundType.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.tee_name} (slope {c.slope_rating})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
           {!showCourseSearch ? (
             <button
               type="button"
-              className="mt-2 text-sm text-fairway-600 hover:text-fairway-800 font-medium transition-colors"
+              className="btn-ghost text-sm"
               onClick={() => setShowCourseSearch(true)}
             >
               Can't find your course? Search and add it
             </button>
           ) : (
-            <div className="mt-3">
+            <div>
               <CourseSearchPicker
                 onApply={applyCourseSearchResult}
                 onCancel={() => setShowCourseSearch(false)}
               />
               {addingCourse && (
-                <p className="text-sm text-fairway-500 mt-2">Adding course...</p>
+                <p className="text-sm text-fairway-500 mt-2 flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-fairway-300 border-t-fairway-700 animate-spin" />
+                  Adding course...
+                </p>
               )}
             </div>
           )}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Date Played</label>
-          <input
-            type="date"
-            required
-            className="w-full min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fairway-400"
-            value={datePlayed}
-            onChange={(e) => setDatePlayed(e.target.value)}
-          />
-        </div>
-
         {selectedCourse && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium">Hole Scores</label>
-              <div className="text-sm font-semibold text-fairway-700 bg-fairway-50 px-2.5 py-1 rounded-full">
-                Gross {totalGross} ({totalDiffLabel})
+          <>
+            <div className="divider my-6" />
+
+            {/* ── Scorecard ────────────────────────────────────────── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="eyebrow">Scorecard</h2>
+                <div className="text-sm font-semibold text-fairway-900 bg-gold-100 text-fairway-950 px-3 py-1 rounded-full tabular-nums">
+                  Gross {totalGross} ({totalDiffLabel})
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {selectedCourse.hole_pars.map((par, i) => (
+                  <HoleScoreStepper
+                    key={i}
+                    index={i}
+                    par={par}
+                    value={holeScores[i] ?? par}
+                    onChange={(v) => handleScoreChange(i, v)}
+                  />
+                ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {selectedCourse.hole_pars.map((par, i) => (
-                <HoleScoreStepper
-                  key={i}
-                  index={i}
-                  par={par}
-                  value={holeScores[i] ?? par}
-                  onChange={(v) => handleScoreChange(i, v)}
-                />
-              ))}
-            </div>
-          </div>
+          </>
         )}
+
+        <div className="divider my-6" />
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full min-h-[52px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.99] disabled:opacity-60 disabled:active:scale-100 text-white text-lg font-semibold py-3 rounded-lg transition-all"
+          className="btn-primary w-full text-base min-h-[52px]"
         >
           {submitting ? "Submitting..." : "Submit Round"}
         </button>
 
         {status && (
           <div
-            className={`p-3 rounded-lg text-sm flex items-start gap-2 ${
+            className={`mt-4 p-3.5 rounded-lg text-sm flex items-start gap-2 ${
               status.type === "success"
-                ? "bg-fairway-100 text-fairway-700"
-                : "bg-red-100 text-red-700"
+                ? "bg-fairway-50 text-fairway-800 border border-fairway-200"
+                : "bg-red-50 text-red-700 border border-red-200"
             }`}
           >
             <span>{status.type === "success" ? "✓" : "✕"}</span>
