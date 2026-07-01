@@ -7,6 +7,7 @@ export default function WeeklyLeaderboard() {
   const [weeks, setWeeks] = useState([]);
   const [selectedWeek, setSelectedWeek] = useState(null);
   const [rows, setRows] = useState([]);
+  const [allRounds, setAllRounds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -23,12 +24,23 @@ export default function WeeklyLeaderboard() {
 
   useEffect(() => {
     if (!selectedWeek) return;
-    api.leaderboard.week(selectedWeek).then(setRows).catch((e) => setError(e.message));
+    Promise.all([
+      api.leaderboard.week(selectedWeek),
+      api.leaderboard.weekAll(selectedWeek),
+    ])
+      .then(([best, all]) => {
+        setRows(best);
+        setAllRounds(all);
+      })
+      .catch((e) => setError(e.message));
   }, [selectedWeek]);
 
   if (loading)
     return <div className="p-6 text-fairway-600 animate-pulse">Loading...</div>;
   if (error) return <div className="p-6 text-red-600">Error: {error}</div>;
+
+  const countingIds = new Set(rows.map((r) => r.id));
+  const extraRounds = allRounds.filter((r) => !countingIds.has(r.id));
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto">
@@ -88,6 +100,31 @@ export default function WeeklyLeaderboard() {
           </tbody>
         </table>
       </div>
+
+      {extraRounds.length > 0 && (
+        <div className="mt-4">
+          <h2 className="text-sm font-semibold text-fairway-500 mb-2">
+            Other rounds this week (best round per player counts toward standings)
+          </h2>
+          <div className="bg-white rounded-xl shadow-card border border-fairway-100 overflow-x-auto">
+            <table className="w-full text-left">
+              <tbody>
+                {extraRounds.map((r) => (
+                  <tr key={r.id} className="border-t border-fairway-100 text-sm text-fairway-500">
+                    <td className="p-3">{r.player_name}</td>
+                    <td className="p-3">
+                      {r.course_name} ({r.tee_name})
+                    </td>
+                    <td className="p-3 text-right">Gross {r.gross_score}</td>
+                    <td className="p-3 text-right">Net {r.net_score}</td>
+                    <td className="p-3 text-right">{r.stableford_points} pts</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

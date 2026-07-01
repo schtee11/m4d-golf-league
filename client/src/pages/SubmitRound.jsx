@@ -21,6 +21,11 @@ export default function SubmitRound() {
   const [showCourseSearch, setShowCourseSearch] = useState(false);
   const [addingCourse, setAddingCourse] = useState(false);
 
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [newPlayerHandicap, setNewPlayerHandicap] = useState("");
+  const [addingPlayer, setAddingPlayer] = useState(false);
+
   useEffect(() => {
     Promise.all([api.players.list(), api.courses.list(), api.weeks.list()]).then(
       ([p, c, w]) => {
@@ -67,6 +72,29 @@ export default function SubmitRound() {
       setStatus({ type: "error", message: `Couldn't add course: ${err.message}` });
     } finally {
       setAddingCourse(false);
+    }
+  };
+
+  const addSelf = async () => {
+    if (!newPlayerName.trim() || newPlayerHandicap === "") return;
+    setAddingPlayer(true);
+    setStatus(null);
+    try {
+      const created = await api.players.create({
+        name: newPlayerName.trim(),
+        handicap_index: Number(newPlayerHandicap),
+      });
+      setPlayers((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
+      );
+      setPlayerId(String(created.id));
+      setShowAddPlayer(false);
+      setNewPlayerName("");
+      setNewPlayerHandicap("");
+    } catch (err) {
+      setStatus({ type: "error", message: `Couldn't add you: ${err.message}` });
+    } finally {
+      setAddingPlayer(false);
     }
   };
 
@@ -136,6 +164,57 @@ export default function SubmitRound() {
               </option>
             ))}
           </select>
+
+          {!showAddPlayer ? (
+            <button
+              type="button"
+              className="mt-2 text-sm text-fairway-600 hover:text-fairway-800 font-medium transition-colors"
+              onClick={() => setShowAddPlayer(true)}
+            >
+              New here? Add yourself
+            </button>
+          ) : (
+            <div className="mt-3 p-4 bg-fairway-50 rounded-xl border border-fairway-100">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">Add yourself</h3>
+                <button
+                  type="button"
+                  className="text-sm text-fairway-500 hover:text-fairway-700"
+                  onClick={() => setShowAddPlayer(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  className="flex-1 min-w-[140px] min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+                  placeholder="Your name"
+                  autoComplete="off"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                />
+                <input
+                  type="number"
+                  step="0.1"
+                  className="w-28 min-h-[48px] p-3 text-base border border-fairway-300 rounded-lg"
+                  placeholder="Handicap"
+                  value={newPlayerHandicap}
+                  onChange={(e) => setNewPlayerHandicap(e.target.value)}
+                />
+                <button
+                  type="button"
+                  disabled={addingPlayer}
+                  className="min-h-[48px] bg-fairway-500 hover:bg-fairway-600 active:scale-[0.98] disabled:opacity-60 text-white px-5 rounded-lg font-medium transition-all"
+                  onClick={addSelf}
+                >
+                  {addingPlayer ? "Adding..." : "Add"}
+                </button>
+              </div>
+              <p className="text-xs text-fairway-400 mt-2">
+                Enter your current Handicap Index from GHIN.
+              </p>
+            </div>
+          )}
         </div>
 
         <div>

@@ -3,6 +3,7 @@ import SeasonLeaderboard from "./pages/SeasonLeaderboard.jsx";
 import WeeklyLeaderboard from "./pages/WeeklyLeaderboard.jsx";
 import SubmitRound from "./pages/SubmitRound.jsx";
 import Commish from "./pages/Commish.jsx";
+import Rules from "./pages/Rules.jsx";
 
 const navLinkClass = ({ isActive }) =>
   `px-3.5 py-2 min-h-[44px] flex items-center rounded-full text-sm font-medium transition-colors duration-150 ${
@@ -30,6 +31,9 @@ export default function App() {
         <NavLink to="/commish" className={navLinkClass}>
           Commish
         </NavLink>
+        <NavLink to="/rules" className={navLinkClass}>
+          Rules
+        </NavLink>
       </nav>
 
       <Routes>
@@ -37,6 +41,7 @@ export default function App() {
         <Route path="/weekly" element={<WeeklyLeaderboard />} />
         <Route path="/submit" element={<SubmitRound />} />
         <Route path="/commish" element={<Commish />} />
+        <Route path="/rules" element={<Rules />} />
       </Routes>
     </div>
   );

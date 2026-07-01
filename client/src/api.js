@@ -44,6 +44,7 @@ export const api = {
   },
   leaderboard: {
     week: (weekId) => request(`/leaderboard/week/${weekId}`),
+    weekAll: (weekId) => request(`/leaderboard/week/${weekId}/all`),
     season: () => request("/leaderboard/season"),
   },
 };
