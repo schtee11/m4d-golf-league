@@ -34,21 +34,23 @@ router.post("/", async (req, res) => {
   }
 });
 
-// PATCH update a player's handicap index
-router.patch("/:id/handicap", async (req, res) => {
+// PATCH update a player's name and/or handicap index (commish only)
+router.patch("/:id", async (req, res) => {
   const { id } = req.params;
-  const { handicap_index } = req.body;
+  const { name, handicap_index } = req.body;
 
-  if (handicap_index === undefined) {
-    return res.status(400).json({ error: "handicap_index is required" });
+  if (name === undefined && handicap_index === undefined) {
+    return res.status(400).json({ error: "Nothing to update" });
   }
 
   try {
     const result = await pool.query(
       `UPDATE players
-       SET handicap_index = $1, handicap_updated_at = now()
-       WHERE id = $2 RETURNING *`,
-      [handicap_index, id]
+       SET name = COALESCE($1, name),
+           handicap_index = COALESCE($2, handicap_index),
+           handicap_updated_at = CASE WHEN $2 IS NOT NULL THEN now() ELSE handicap_updated_at END
+       WHERE id = $3 RETURNING *`,
+      [name ?? null, handicap_index ?? null, id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Player not found" });
@@ -56,7 +58,7 @@ router.patch("/:id/handicap", async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to update handicap" });
+    res.status(500).json({ error: "Failed to update player" });
   }
 });
 

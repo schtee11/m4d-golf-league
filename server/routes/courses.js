@@ -107,4 +107,69 @@ router.post("/", async (req, res) => {
   }
 });
 
+// PATCH update a course/tee (commish only)
+router.patch("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, tee_name, round_type, slope_rating, course_rating, par, hole_pars } = req.body;
+
+  if (round_type !== undefined || hole_pars !== undefined) {
+    const current = await pool.query("SELECT round_type, hole_pars FROM courses WHERE id = $1", [id]);
+    if (current.rows.length === 0) return res.status(404).json({ error: "Course not found" });
+
+    const effectiveRoundType = round_type ?? current.rows[0].round_type;
+    const effectiveHolePars = hole_pars ?? current.rows[0].hole_pars;
+    const expectedLength = effectiveRoundType === "9" ? 9 : 18;
+    if (!Array.isArray(effectiveHolePars) || effectiveHolePars.length !== expectedLength) {
+      return res.status(400).json({
+        error: `hole_pars must be an array of length ${expectedLength} for round_type ${effectiveRoundType}`,
+      });
+    }
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE courses SET
+         name = COALESCE($1, name),
+         tee_name = COALESCE($2, tee_name),
+         round_type = COALESCE($3, round_type),
+         slope_rating = COALESCE($4, slope_rating),
+         course_rating = COALESCE($5, course_rating),
+         par = COALESCE($6, par),
+         hole_pars = COALESCE($7, hole_pars)
+       WHERE id = $8 RETURNING *`,
+      [
+        name ?? null,
+        tee_name ?? null,
+        round_type ?? null,
+        slope_rating ?? null,
+        course_rating ?? null,
+        par ?? null,
+        hole_pars ?? null,
+        id,
+      ]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "Course not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update course" });
+  }
+});
+
+// DELETE a course/tee (commish only)
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query("DELETE FROM courses WHERE id = $1", [id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Course not found" });
+    res.status(204).send();
+  } catch (err) {
+    if (err.code === "23503") {
+      return res.status(409).json({ error: "Can't delete a course that has rounds submitted for it" });
+    }
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete course" });
+  }
+});
+
 export default router;

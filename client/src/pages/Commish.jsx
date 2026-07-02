@@ -1,18 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 import CourseSearchPicker from "../components/CourseSearchPicker.jsx";
+
+function ErrorBanner({ message }) {
+  if (!message) return null;
+  return (
+    <div className="mb-4 p-3.5 rounded-lg text-sm flex items-start gap-2 bg-red-50 text-red-700 border border-red-200">
+      <span>✕</span>
+      <span>{message}</span>
+    </div>
+  );
+}
 
 export default function Commish() {
   const [players, setPlayers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [weeks, setWeeks] = useState([]);
+  const [rounds, setRounds] = useState([]);
 
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerHandicap, setNewPlayerHandicap] = useState("");
+  const [playerError, setPlayerError] = useState("");
 
   const [newWeekNumber, setNewWeekNumber] = useState("");
   const [newWeekStart, setNewWeekStart] = useState("");
   const [newWeekEnd, setNewWeekEnd] = useState("");
+  const [weekError, setWeekError] = useState("");
+  const [editingWeekId, setEditingWeekId] = useState(null);
+  const [weekEditForm, setWeekEditForm] = useState(null);
+
+  const [courseError, setCourseError] = useState("");
+  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [courseEditForm, setCourseEditForm] = useState(null);
 
   // Course name/holes are shared; each course can have several tees
   // (Blue, White, Red...), each with its own slope/rating, added together
@@ -57,43 +76,151 @@ export default function Commish() {
     api.players.list().then(setPlayers);
     api.courses.list().then(setCourses);
     api.weeks.list().then(setWeeks);
+    api.rounds.list().then(setRounds);
   };
 
   useEffect(refresh, []);
 
+  // Which players have submitted a round for each week, so the open week(s)
+  // can show who the commish still needs to chase.
+  const submittedPlayerIdsByWeek = useMemo(() => {
+    const map = new Map();
+    for (const r of rounds) {
+      if (!map.has(r.week_id)) map.set(r.week_id, new Set());
+      map.get(r.week_id).add(r.player_id);
+    }
+    return map;
+  }, [rounds]);
+
   const addPlayer = async (e) => {
     e.preventDefault();
-    await api.players.create({
-      name: newPlayerName,
-      handicap_index: Number(newPlayerHandicap),
-    });
-    setNewPlayerName("");
-    setNewPlayerHandicap("");
-    refresh();
+    setPlayerError("");
+    try {
+      await api.players.create({
+        name: newPlayerName,
+        handicap_index: Number(newPlayerHandicap),
+      });
+      setNewPlayerName("");
+      setNewPlayerHandicap("");
+      refresh();
+    } catch (err) {
+      setPlayerError(`Couldn't add player: ${err.message}`);
+    }
+  };
+
+  const updatePlayerName = async (player, value) => {
+    const name = value.trim();
+    if (!name || name === player.name) return;
+    setPlayerError("");
+    try {
+      await api.players.update(player.id, { name });
+      refresh();
+    } catch (err) {
+      setPlayerError(`Couldn't rename player: ${err.message}`);
+    }
   };
 
   const updateHandicap = async (id, value) => {
-    await api.players.updateHandicap(id, Number(value));
-    refresh();
+    setPlayerError("");
+    try {
+      await api.players.update(id, { handicap_index: Number(value) });
+      refresh();
+    } catch (err) {
+      setPlayerError(`Couldn't update handicap: ${err.message}`);
+    }
+  };
+
+  const deletePlayer = async (player) => {
+    if (!window.confirm(`Remove ${player.name}? This also deletes their submitted rounds.`)) return;
+    setPlayerError("");
+    try {
+      await api.players.remove(player.id);
+      refresh();
+    } catch (err) {
+      setPlayerError(`Couldn't remove ${player.name}: ${err.message}`);
+    }
   };
 
   const addWeek = async (e) => {
     e.preventDefault();
-    await api.weeks.create({
-      week_number: Number(newWeekNumber),
-      start_date: newWeekStart,
-      end_date: newWeekEnd,
+    setWeekError("");
+    try {
+      await api.weeks.create({
+        week_number: Number(newWeekNumber),
+        start_date: newWeekStart,
+        end_date: newWeekEnd,
+      });
+      setNewWeekNumber("");
+      setNewWeekStart("");
+      setNewWeekEnd("");
+      refresh();
+    } catch (err) {
+      setWeekError(`Couldn't add week: ${err.message}`);
+    }
+  };
+
+  const startEditWeek = (w) => {
+    setWeekError("");
+    setEditingWeekId(w.id);
+    setWeekEditForm({
+      week_number: String(w.week_number),
+      start_date: w.start_date.slice(0, 10),
+      end_date: w.end_date.slice(0, 10),
     });
-    setNewWeekNumber("");
-    setNewWeekStart("");
-    setNewWeekEnd("");
-    refresh();
+  };
+
+  const saveWeek = async (id) => {
+    setWeekError("");
+    try {
+      await api.weeks.update(id, {
+        week_number: Number(weekEditForm.week_number),
+        start_date: weekEditForm.start_date,
+        end_date: weekEditForm.end_date,
+      });
+      setEditingWeekId(null);
+      refresh();
+    } catch (err) {
+      setWeekError(`Couldn't save week: ${err.message}`);
+    }
+  };
+
+  const closeWeek = async (w) => {
+    if (!window.confirm(`Close Week ${w.week_number}? Players won't be able to submit scores for it anymore.`)) return;
+    setWeekError("");
+    try {
+      await api.weeks.close(w.id);
+      refresh();
+    } catch (err) {
+      setWeekError(`Couldn't close week: ${err.message}`);
+    }
+  };
+
+  const reopenWeek = async (w) => {
+    setWeekError("");
+    try {
+      await api.weeks.reopen(w.id);
+      refresh();
+    } catch (err) {
+      setWeekError(`Couldn't reopen week: ${err.message}`);
+    }
+  };
+
+  const deleteWeek = async (w) => {
+    if (!window.confirm(`Delete Week ${w.week_number}? This can't be undone.`)) return;
+    setWeekError("");
+    try {
+      await api.weeks.remove(w.id);
+      refresh();
+    } catch (err) {
+      setWeekError(`Couldn't delete Week ${w.week_number}: ${err.message}`);
+    }
   };
 
   const [addingCourses, setAddingCourses] = useState(false);
 
   const addCourse = async (e) => {
     e.preventDefault();
+    setCourseError("");
     const holePars = courseForm.hole_pars
       .split(",")
       .map((s) => Number(s.trim()))
@@ -122,8 +249,64 @@ export default function Commish() {
       setCourseForm({ name: "", round_type: "18", par: "", hole_pars: "" });
       setTeeRows([{ ...emptyTeeRow }]);
       refresh();
+    } catch (err) {
+      setCourseError(`Couldn't add course: ${err.message}`);
     } finally {
       setAddingCourses(false);
+    }
+  };
+
+  const startEditCourse = (c) => {
+    setCourseError("");
+    setEditingCourseId(c.id);
+    setCourseEditForm({
+      name: c.name,
+      tee_name: c.tee_name,
+      round_type: c.round_type,
+      slope_rating: String(c.slope_rating),
+      course_rating: String(c.course_rating),
+      par: String(c.par),
+      hole_pars: c.hole_pars.join(","),
+    });
+  };
+
+  const saveCourse = async (id) => {
+    setCourseError("");
+    const holePars = courseEditForm.hole_pars
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => !isNaN(n));
+    const expectedLength = courseEditForm.round_type === "9" ? 9 : 18;
+    if (holePars.length !== expectedLength) {
+      setCourseError(`Hole pars must have ${expectedLength} values for a ${courseEditForm.round_type}-hole course.`);
+      return;
+    }
+
+    try {
+      await api.courses.update(id, {
+        name: courseEditForm.name,
+        tee_name: courseEditForm.tee_name,
+        round_type: courseEditForm.round_type,
+        slope_rating: Number(courseEditForm.slope_rating),
+        course_rating: Number(courseEditForm.course_rating),
+        par: Number(courseEditForm.par),
+        hole_pars: holePars,
+      });
+      setEditingCourseId(null);
+      refresh();
+    } catch (err) {
+      setCourseError(`Couldn't save course: ${err.message}`);
+    }
+  };
+
+  const deleteCourse = async (c) => {
+    if (!window.confirm(`Delete ${c.name} — ${c.tee_name}?`)) return;
+    setCourseError("");
+    try {
+      await api.courses.remove(c.id);
+      refresh();
+    } catch (err) {
+      setCourseError(`Couldn't delete ${c.name} — ${c.tee_name}: ${err.message}`);
     }
   };
 
@@ -140,6 +323,7 @@ export default function Commish() {
       {/* Players */}
       <section className="card p-6 animate-fade-up">
         <h2 className="section-heading mb-4">Players</h2>
+        <ErrorBanner message={playerError} />
         <form onSubmit={addPlayer} className="flex flex-wrap gap-2 mb-5">
           <input
             className="input-field flex-1 min-w-[140px]"
@@ -162,8 +346,12 @@ export default function Commish() {
 
         <ul className="divide-y divide-fairway-900/8">
           {players.map((p) => (
-            <li key={p.id} className="py-2.5 flex items-center justify-between">
-              <span className="font-medium text-fairway-900">{p.name}</span>
+            <li key={p.id} className="py-2.5 flex items-center gap-2">
+              <input
+                className="flex-1 min-w-0 min-h-[44px] p-2 border border-fairway-900/20 rounded-lg bg-white font-medium text-fairway-900 focus:outline-none focus:ring-2 focus:ring-gold-400/60 focus:border-gold-400"
+                defaultValue={p.name}
+                onBlur={(e) => updatePlayerName(p, e.target.value)}
+              />
               <input
                 type="number"
                 step="0.1"
@@ -171,6 +359,14 @@ export default function Commish() {
                 className="w-24 min-h-[44px] p-2 border border-fairway-900/20 rounded-lg text-right bg-white focus:outline-none focus:ring-2 focus:ring-gold-400/60 focus:border-gold-400"
                 onBlur={(e) => updateHandicap(p.id, e.target.value)}
               />
+              <button
+                type="button"
+                onClick={() => deletePlayer(p)}
+                className="min-h-[44px] px-2 text-fairway-400 hover:text-red-600 transition-colors"
+                aria-label={`Remove ${p.name}`}
+              >
+                ✕
+              </button>
             </li>
           ))}
           {players.length === 0 && (
@@ -182,6 +378,7 @@ export default function Commish() {
       {/* Weeks */}
       <section className="card p-6 animate-fade-up">
         <h2 className="section-heading mb-4">Weeks</h2>
+        <ErrorBanner message={weekError} />
         <form onSubmit={addWeek} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
           <input
             type="number"
@@ -208,25 +405,99 @@ export default function Commish() {
           <button className="btn-gold sm:col-span-3">Add Week</button>
         </form>
         <ul className="divide-y divide-fairway-900/8">
-          {weeks.map((w) => (
-            <li key={w.id} className="py-2.5 flex items-center justify-between">
-              <span className="font-medium text-fairway-900">
-                Week {w.week_number}{" "}
-                <span className="text-fairway-400 font-normal">
-                  ({w.start_date} – {w.end_date})
-                </span>
-              </span>
-              <span
-                className={`badge ${
-                  w.status === "open"
-                    ? "bg-fairway-100 text-fairway-700"
-                    : "bg-fairway-950/10 text-fairway-500"
-                }`}
-              >
-                {w.status}
-              </span>
-            </li>
-          ))}
+          {weeks.map((w) => {
+            const isEditing = editingWeekId === w.id;
+            const submittedIds = submittedPlayerIdsByWeek.get(w.id) ?? new Set();
+            const missing = players.filter((p) => !submittedIds.has(p.id));
+
+            if (isEditing) {
+              return (
+                <li key={w.id} className="py-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <input
+                      type="number"
+                      className="input-field"
+                      value={weekEditForm.week_number}
+                      onChange={(e) => setWeekEditForm({ ...weekEditForm, week_number: e.target.value })}
+                    />
+                    <input
+                      type="date"
+                      className="input-field"
+                      value={weekEditForm.start_date}
+                      onChange={(e) => setWeekEditForm({ ...weekEditForm, start_date: e.target.value })}
+                    />
+                    <input
+                      type="date"
+                      className="input-field"
+                      value={weekEditForm.end_date}
+                      onChange={(e) => setWeekEditForm({ ...weekEditForm, end_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button type="button" className="btn-primary btn-sm" onClick={() => saveWeek(w.id)}>
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      onClick={() => setEditingWeekId(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </li>
+              );
+            }
+
+            return (
+              <li key={w.id} className="py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-fairway-900">
+                    Week {w.week_number}{" "}
+                    <span className="text-fairway-400 font-normal">
+                      ({w.start_date.slice(0, 10)} – {w.end_date.slice(0, 10)})
+                    </span>
+                  </span>
+                  <span
+                    className={`badge ${
+                      w.status === "open"
+                        ? "bg-fairway-100 text-fairway-700"
+                        : "bg-fairway-950/10 text-fairway-500"
+                    }`}
+                  >
+                    {w.status}
+                  </span>
+                </div>
+                {w.status === "open" && players.length > 0 && (
+                  <p className="text-xs text-fairway-400 mt-1">
+                    {submittedIds.size}/{players.length} submitted
+                    {missing.length > 0 && ` — waiting on ${missing.map((p) => p.name).join(", ")}`}
+                  </p>
+                )}
+                <div className="flex gap-3 mt-2">
+                  <button type="button" className="btn-ghost text-sm" onClick={() => startEditWeek(w)}>
+                    Edit
+                  </button>
+                  {w.status === "open" ? (
+                    <button type="button" className="btn-ghost text-sm" onClick={() => closeWeek(w)}>
+                      Close
+                    </button>
+                  ) : (
+                    <button type="button" className="btn-ghost text-sm" onClick={() => reopenWeek(w)}>
+                      Reopen
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-ghost text-sm text-red-600 hover:text-red-700"
+                    onClick={() => deleteWeek(w)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            );
+          })}
           {weeks.length === 0 && (
             <li className="py-6 text-center text-sm text-fairway-400">No weeks yet.</li>
           )}
@@ -236,6 +507,7 @@ export default function Commish() {
       {/* Courses */}
       <section className="card p-6 animate-fade-up">
         <h2 className="section-heading mb-4">Courses</h2>
+        <ErrorBanner message={courseError} />
 
         <div className="mb-6">
           <CourseSearchPicker onApply={applyCourseSearchResult} />
@@ -319,11 +591,7 @@ export default function Commish() {
                 </div>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={addTeeRow}
-              className="btn-ghost text-sm mt-2.5"
-            >
+            <button type="button" onClick={addTeeRow} className="btn-ghost text-sm mt-2.5">
               + Add another tee
             </button>
           </div>
@@ -338,17 +606,107 @@ export default function Commish() {
         </form>
 
         <ul className="divide-y divide-fairway-900/8">
-          {courses.map((c) => (
-            <li key={c.id} className="py-2.5 text-sm flex items-center justify-between gap-2">
-              <span className="text-fairway-900">
-                <span className="font-medium">{c.name}</span>
-                <span className="text-fairway-400"> — {c.tee_name}</span>
-              </span>
-              <span className="text-xs text-fairway-400 shrink-0 tabular-nums">
-                {c.round_type}h &middot; slope {c.slope_rating} &middot; rating {c.course_rating}
-              </span>
-            </li>
-          ))}
+          {courses.map((c) => {
+            const isEditing = editingCourseId === c.id;
+
+            if (isEditing) {
+              return (
+                <li key={c.id} className="py-3 text-sm">
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        className="input-field"
+                        placeholder="Course name"
+                        value={courseEditForm.name}
+                        onChange={(e) => setCourseEditForm({ ...courseEditForm, name: e.target.value })}
+                      />
+                      <input
+                        className="input-field"
+                        placeholder="Tee name"
+                        value={courseEditForm.tee_name}
+                        onChange={(e) => setCourseEditForm({ ...courseEditForm, tee_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <select
+                        className="input-field"
+                        value={courseEditForm.round_type}
+                        onChange={(e) => setCourseEditForm({ ...courseEditForm, round_type: e.target.value })}
+                      >
+                        <option value="18">18 holes</option>
+                        <option value="9">9 holes</option>
+                      </select>
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="input-field"
+                        placeholder="Slope"
+                        value={courseEditForm.slope_rating}
+                        onChange={(e) => setCourseEditForm({ ...courseEditForm, slope_rating: e.target.value })}
+                      />
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="input-field"
+                        placeholder="Rating"
+                        value={courseEditForm.course_rating}
+                        onChange={(e) => setCourseEditForm({ ...courseEditForm, course_rating: e.target.value })}
+                      />
+                      <input
+                        type="number"
+                        className="input-field"
+                        placeholder="Par"
+                        value={courseEditForm.par}
+                        onChange={(e) => setCourseEditForm({ ...courseEditForm, par: e.target.value })}
+                      />
+                    </div>
+                    <input
+                      className="input-field"
+                      placeholder="Hole pars, comma separated"
+                      value={courseEditForm.hole_pars}
+                      onChange={(e) => setCourseEditForm({ ...courseEditForm, hole_pars: e.target.value })}
+                    />
+                    <div className="flex gap-2">
+                      <button type="button" className="btn-primary btn-sm" onClick={() => saveCourse(c.id)}>
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-sm"
+                        onClick={() => setEditingCourseId(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              );
+            }
+
+            return (
+              <li key={c.id} className="py-2.5 text-sm flex items-center justify-between gap-2">
+                <span className="text-fairway-900">
+                  <span className="font-medium">{c.name}</span>
+                  <span className="text-fairway-400"> — {c.tee_name}</span>
+                  <span className="block text-xs text-fairway-400 tabular-nums">
+                    {c.round_type}h &middot; slope {c.slope_rating} &middot; rating {c.course_rating}
+                  </span>
+                </span>
+                <div className="flex gap-3 shrink-0">
+                  <button type="button" className="btn-ghost text-sm" onClick={() => startEditCourse(c)}>
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost text-sm text-red-600 hover:text-red-700"
+                    onClick={() => deleteCourse(c)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            );
+          })}
           {courses.length === 0 && (
             <li className="py-6 text-center text-sm text-fairway-400">No courses yet.</li>
           )}
